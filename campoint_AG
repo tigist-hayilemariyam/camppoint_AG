@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>campoint AG – Research & Data Architecture Thoughts by Tigist</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #0A0A0F;
+  --surface: #12121A;
+  --surface2: #1A1A25;
+  --border: #2A2A3A;
+  --accent: #E8A020;
+  --text: #E8E8F0;
+  --text-dim: #8888A0;
+  --text-bright: #FFFFFF;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.6;
+}
+
+.hero {
+  padding: 4rem 3rem 3rem;
+  border-bottom: 1px solid var(--border);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.hero-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  color: var(--text-bright);
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.hero h1 em { color: var(--accent); font-style: italic; }
+
+.hero-note {
+  font-size: 14px;
+  color: var(--text-dim);
+  max-width: 640px;
+  line-height: 1.8;
+  margin-bottom: 2rem;
+  font-style: italic;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+}
+
+.meta-item .val {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text-bright);
+  display: block;
+}
+
+.meta-item .key {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 3rem; }
+.section { margin-bottom: 4rem; }
+
+.sec-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.sec-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+}
+
+.sec-desc {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  max-width: 600px;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+/* STATS GRID */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  border-top: 3px solid var(--accent);
+}
+
+.stat-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* FILTER TABS */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.filter-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.filter-btn.active {
+  background: var(--accent);
+  color: #0A0A0F;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* TREND CARDS */
+.trends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.trend-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.trend-card.hidden { display: none; }
+.trend-card.highlighted { border-color: var(--accent); background: #16140A; }
+
+.trend-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
+
+.card-dwh::before { background: linear-gradient(90deg, #E8A020, #F7971E); }
+.card-ai::before { background: linear-gradient(90deg, #4ECDC4, #44A08D); }
+.card-payment::before { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
+.card-crm::before { background: linear-gradient(90deg, #667eea, #764ba2); }
+
+.card-sector {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.75rem;
+}
+
+.card-number {
+  font-family: 'DM Mono', monospace;
+  font-size: 32px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.card-period {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+.card-detail {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+/* BAR CHART */
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 12px;
+  transition: opacity 0.3s;
+}
+
+.bar-row.dimmed { opacity: 0.2; }
+
+.bar-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  width: 170px;
+  flex-shrink: 0;
+}
+
+.bar-track {
+  flex: 1;
+  height: 7px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  width: 0;
+  transition: width 0.8s ease-out;
+}
+
+.bar-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text-bright);
+  width: 60px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* DASHBOARD */
+.dashboard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dash-header {
+  background: var(--surface2);
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-title { font-size: 13px; font-weight: 600; color: var(--text-bright); }
+.dash-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.live-dot {
+  width: 8px; height: 8px;
+  background: #4CAF50;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(76,175,80,0); }
+}
+
+.dash-body { padding: 1.5rem; }
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.kpi-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+}
+
+.kpi-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpi-delta { font-size: 11px; margin-top: 4px; }
+.up { color: #4CAF50; }
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.chart-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.chart-box-title {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace;
+}
+
+svg.spark { width: 100%; height: 75px; }
+
+.donut-wrap { display: flex; align-items: center; gap: 1.25rem; }
+.legend { flex: 1; }
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+}
+.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* THOUGHTS & IDEAS */
+.thoughts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.thought-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.thought-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+.thought-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.thought-text {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.ideas-box {
+  background: linear-gradient(135deg, var(--surface), rgba(232,160,32,0.04));
+  border: 1px solid rgba(232,160,32,0.25);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.ideas-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+.ideas-text {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.85;
+  margin-bottom: 1.25rem;
+}
+
+.ideas-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.idea-tag {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(232,160,32,0.08);
+  border: 1px solid rgba(232,160,32,0.2);
+  color: var(--accent);
+}
+
+.author {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.author-name { font-size: 14px; font-weight: 600; color: var(--text-bright); }
+.author-role { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.author-contact { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); }
+
+@media (max-width: 680px) {
+  .hero { padding: 2rem 1.5rem; }
+  .container { padding: 1.5rem; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .kpi-row { grid-template-columns: repeat(2,1fr); }
+  .chart-row { grid-template-columns: 1fr; }
+  .thoughts-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">Research & Data Architecture Thoughts — August 2026</div>
+  <h1>Was ich über die <em>campoint AG</em><br>herausgefunden habe</h1>
+  <p class="hero-note">
+    Ich habe mir die Data-Analyst-Ausschreibung und das Ökosystem der campoint AG in Seligenstadt genau angeschaut. Als E-Commerce-Treiber mit eigener Softwareentwicklung, Hosting, Zahlungsverkehr und KI-Integration baut campoint gerade eine moderne Data-Warehouse-Architektur von Grund auf neu auf. Hier sind meine Gedanken und ein kleines Dashboard-Konzept dazu.
+  </p>
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="val">Seligenstadt (Frankfurt)</span>
+      <span class="key">Standort</span>
+    </div>
+    <div class="meta-item">
+      <span class="val">MS Fabric, Power BI, SQL, Python</span>
+      <span class="key">Tech-Stack Focus</span>
+    </div>
+    <div class="meta-item">
+      <span class="val">Claude Code & AI Workflows</span>
+      <span class="key">Arbeitsweise</span>
+    </div>
+    <div class="meta-item">
+      <span class="val">Tigist Hayilemariyam</span>
+      <span class="key">Bewerberin – Data Analyst</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- COMPANY FACTS -->
+  <div class="section">
+    <div class="sec-label">Wer ist die campoint AG?</div>
+    <div class="sec-title">Ein E-Commerce & Tech-Powerhouse</div>
+    <p class="sec-desc">campoint deckt die gesamte Wertschöpfungskette des digitalen Geschäfts ab: vom Code über Zahlungsabwicklung und Hosting bis zum CRM. Genau diese Vielfalt erzeugt enorme Datenmengen.</p>
+
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-val">E-Commerce</div>
+        <div class="stat-label">Kernbranche</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">End-to-End</div>
+        <div class="stat-label">Code bis Payment</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">MS Fabric</div>
+        <div class="stat-label">Neue DWH Architektur</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">KI-Native</div>
+        <div class="stat-label">Claude Code Einsatz</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRENDS / FOKUSBEREICHE -->
+  <div class="section">
+    <div class="sec-label">Teil 01</div>
+    <div class="sec-title">Die vier Säulen der Datenarbeit bei campoint</div>
+    <p class="sec-desc">Beim Neuaufbau der Data-Warehouse-Architektur treffen verschiedene Datenströme aufeinander. Hier sind die vier Schlüsselbereiche, die mir aufgefallen sind.</p>
+
+    <div class="filter-tabs">
+      <button class="filter-btn active" onclick="filterCards('all', event)">Alle Bereiche</button>
+      <button class="filter-btn" onclick="filterCards('dwh', event)">Data Warehouse</button>
+      <button class="filter-btn" onclick="filterCards('ai', event)">KI Workflows</button>
+      <button class="filter-btn" onclick="filterCards('payment', event)">Payment & Fintech</button>
+      <button class="filter-btn" onclick="filterCards('crm', event)">Product & CRM</button>
+    </div>
+
+    <div class="trends-grid">
+
+      <div class="trend-card card-dwh" data-sector="dwh">
+        <div class="card-sector">Data Warehouse & Cloud</div>
+        <div class="card-name">Neuausrichtung der Datenarchitektur</div>
+        <div class="card-number" style="color:#E8A020">Fabric</div>
+        <div class="card-period">Microsoft Fabric, SQL & Power BI Ecosystem</div>
+        <div class="card-detail">
+          Das Data Warehouse wird von Grund auf neu aufgebaut. Rohdaten aus verschiedenen Quellen müssen strukturiert, modelliert und bereinigt werden, damit Fachbereiche verlässliche Reports erhalten. Meine Kenntnisse in SQL und Datenmodellierung passen hier perfekt.
+        </div>
+      </div>
+
+      <div class="trend-card card-ai" data-sector="ai">
+        <div class="card-sector">Effizienz & Innovation</div>
+        <div class="card-name">Hand in Hand mit KI (Claude Code)</div>
+        <div class="card-number" style="color:#4ECDC4">AI First</div>
+        <div class="card-period">Kopf für logische Zusammenhänge, KI für Routine</div>
+        <div class="card-detail">
+          campoint nutzt KI-Tools wie Claude Code, um repetitive Programmieraufgaben abzukürzen. Das finde ich extrem clever: So liegt der Fokus des Analysts nicht auf Syntax-Frust, sondern darauf, die richtigen Fragen zu stellen und Business-Insights zu generieren.
+        </div>
+      </div>
+
+      <div class="trend-card card-payment" data-sector="payment">
+        <div class="card-sector">Fintech & Zahlungsverkehr</div>
+        <div class="card-name">Payment & Revenue Analytics</div>
+        <div class="card-number" style="color:#4CAF50">Finanz-KPIs</div>
+        <div class="card-period">Schnittstelle zu Banken & Transaktionsdaten</div>
+        <div class="card-detail">
+          Zahlungsverkehr ist einer der sensibelsten und datenintensivsten Bereiche im E-Commerce. Durch meinen Background bei der Awash Bank und mein Finance-Studium verstehe ich Transaktionsanalysen, Abstimmungen und Abstimmungslogiken im Detail.
+        </div>
+      </div>
+
+      <div class="trend-card card-crm" data-sector="crm">
+        <div class="card-sector">Produkte & Kundenservice</div>
+        <div class="card-name">Cross-Functional Reporting</div>
+        <div class="card-period">Einheitliche Dashboards für Produkt, Sales & Support</div>
+        <div class="card-detail">
+          Daten nützen nur, wenn die Fachbereiche sie verstehen. Ein zentrales Ziel ist es, komplizierte Zahlenströme in übersichtliche, verständliche Power BI Dashboards zu übersetzen, die sofortige Entscheidungsfindung ermöglichen.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BAR CHART -->
+    <div style="margin-top:1.5rem;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1rem;">Anforderungsprofil & Skill-Match</div>
+      <div class="bar-row" data-sector="dwh">
+        <div class="bar-label">Power BI & Dashboards</div>
+        <div class="bar-track"><div class="bar-fill" data-width="95" style="background:linear-gradient(90deg,#E8A020,#F7971E)"></div></div>
+        <div class="bar-val">95%</div>
+      </div>
+      <div class="bar-row" data-sector="payment">
+        <div class="bar-label">SQL & Datenmodellierung</div>
+        <div class="bar-track"><div class="bar-fill" data-width="90" style="background:linear-gradient(90deg,#4CAF50,#8BC34A)"></div></div>
+        <div class="bar-val">90%</div>
+      </div>
+      <div class="bar-row" data-sector="payment">
+        <div class="bar-label">Zahlungsverkehr & Finance</div>
+        <div class="bar-track"><div class="bar-fill" data-width="100" style="background:linear-gradient(90deg,#667eea,#764ba2)"></div></div>
+        <div class="bar-val">100%</div>
+      </div>
+      <div class="bar-row" data-sector="ai">
+        <div class="bar-label">KI-gestützte Analytics</div>
+        <div class="bar-track"><div class="bar-fill" data-width="85" style="background:linear-gradient(90deg,#4ECDC4,#44A08D)"></div></div>
+        <div class="bar-val">85%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD SIMULATION -->
+  <div class="section">
+    <div class="sec-label">Teil 02</div>
+    <div class="sec-title">Simuliertes E-Commerce & Payment Dashboard</div>
+    <p class="sec-desc">So könnte ein zentrales Executive Dashboard im Power BI Stil aussehen, das Transaktionen, Conversion-Raten und System-Performance verknüpft.</p>
+
+    <div class="dashboard">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title">campoint AG — E-Commerce & Payment Operations Cockpit</div>
+          <div class="dash-sub">Datenströme: Transaktionen | Payment Gateways | User Conversion</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="live-dot"></div>
+          <span style="font-size:11px;color:var(--text-dim)">Simulierte Daten</span>
+        </div>
+      </div>
+      <div class="dash-body">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-val">124,500</div>
+            <div class="kpi-label">Transaktionen / Tag</div>
+            <div class="kpi-delta up">▲ +12.4% vs VM</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val">99.4%</div>
+            <div class="kpi-label">Payment Success Rate</div>
+            <div class="kpi-delta up">▲ +0.3pp Optimal</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val">€38.20</div>
+            <div class="kpi-label">Avg Order Value (AOV)</div>
+            <div class="kpi-delta up">▲ +1.8% vs VJ</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-val">0.42s</div>
+            <div class="kpi-label">DWH Latenzzeit</div>
+            <div class="kpi-delta up">▲ Echtzeit-Flow</div>
+          </div>
+        </div>
+
+        <div class="chart-row">
+          <div class="chart-box">
+            <div class="chart-box-title">Transaktionsverlauf (Monatstrend)</div>
+            <svg class="spark" viewBox="0 0 300 75">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#E8A020" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#E8A020" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,50 L50,42 L100,48 L150,30 L200,25 L250,18 L300,12" fill="none" stroke="#E8A020" stroke-width="2" stroke-linecap="round"/>
+              <path d="M0,50 L50,42 L100,48 L150,30 L200,25 L250,18 L300,12 L300,75 L0,75 Z" fill="url(#g1)"/>
+              <circle cx="300" cy="12" r="3.5" fill="#E8A020"/>
+              <text x="245" y="10" fill="#E8A020" font-size="9" font-family="DM Mono,monospace">124.5k</text>
+            </svg>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-box-title">Payment Verteilung nach Methode</div>
+            <div class="donut-wrap">
+              <svg width="85" height="85" viewBox="0 0 90 90">
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#E8A020" stroke-width="11" stroke-dasharray="110 110" stroke-dashoffset="0" transform="rotate(-90 45 45)"/>
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#4ECDC4" stroke-width="11" stroke-dasharray="66 154" stroke-dashoffset="-110" transform="rotate(-90 45 45)"/>
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#4CAF50" stroke-width="11" stroke-dasharray="44 176" stroke-dashoffset="-176" transform="rotate(-90 45 45)"/>
+              </svg>
+              <div class="legend">
+                <div class="leg-item"><div class="leg-dot" style="background:#E8A020"></div>Kreditkarte 50%</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#4ECDC4"></div>E-Wallet 30%</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#4CAF50"></div>Direct Debit / Lastschrift 20%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- THOUGHTS -->
+  <div class="section">
+    <div class="sec-label">Teil 03</div>
+    <div class="sec-title">Meine Beobachtungen & Lösungsansätze</div>
+
+    <div class="thoughts-grid">
+      <div class="thought-card">
+        <div class="thought-num">GEDANKE 01</div>
+        <div class="thought-title">Payment-Daten brauchen unbedingte Präzision</div>
+        <div class="thought-text">
+          Im E-Commerce ist Zahlungsverkehr kein beliebiges Datenset – Abweichungen im Cent-Bereich oder abgebrochene Zahlungsströme haben sofortige finanzielle Auswirkungen. Durch meine Bank- und Finance-Ausbildung bringe ich genau die Sorgfalt mit, um Transaktionsdaten lückenlos abzugleichen.
+        </div>
+      </div>
+      <div class="thought-card">
+        <div class="thought-num">GEDANKE 02</div>
+        <div class="thought-title">KI als Beschleuniger, nicht als Ersatz</div>
+        <div class="thought-text">
+          Dass campoint Claude Code nutzt, trifft genau meine Philosophie: KI löst repetitive SQL-Abfragen oder Boilerplate-Code im Handumdrehen. Der echte Mehrwert entsteht dadurch, dass der Analyst mehr Zeit hat, die betriebswirtschaftliche Logik hinter den Zahlen zu durchdringen.
+        </div>
+      </div>
+      <div class="thought-card">
+        <div class="thought-num">GEDANKE 03</div>
+        <div class="thought-title">Microsoft Fabric als moderne Schaltzentrale</div>
+        <div class="thought-text">
+          Ein neues DWH auf Microsoft Fabric aufzubauen ist eine spannende Chance. Die Trennung von Speicherung und Rechenleistung sowie die direkte Anbindung an Power BI erlauben es, ohne veraltete Altlasten saubere Sternschemas und Datenmodelle aufzusetzen.
+        </div>
+      </div>
+      <div class="thought-card">
+        <div class="thought-num">GEDANKE 04</div>
+        <div class="thought-title">Cross-Department Storytelling</div>
+        <div class="thought-text">
+          Ein Dashboard für Entwickler muss anders strukturiert sein als eines für den Kundenservice oder das Management. Gute Datenarbeit bedeutet, die Übersetzung in verständliche Visualisierungen zu leisten – genau das treibt mich an.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IDEAS & SKILLS -->
+  <div class="section">
+    <div class="sec-label">Teil 04</div>
+    <div class="sec-title">Was ich ab Tag 1 einbringen kann</div>
+
+    <div class="ideas-box">
+      <div class="ideas-title">Mein Beitrag zum campoint Data Team</div>
+      <div class="ideas-text">
+        Ich bringe eine einzigartige Kombination aus **Finanz- & Payment-Verständnis** (Bachelor Accounting/Finance & Bankpraxis) und **modernen Data-Analytics-Skills** (AZAV-Zertifizierung in Power BI, SQL, Python) mit. Ich freue mich darauf, mich rasch in Ihre neue Data-Warehouse-Architektur einzudenken und mitNeugier, Mut und KI-Unterstützung wertvolle Insights zu liefern.
+      </div>
+      <div class="ideas-tags">
+        <span class="idea-tag">Power BI & DAX</span>
+        <span class="idea-tag">SQL Data Modeling</span>
+        <span class="idea-tag">Payment & Transaction Analysis</span>
+        <span class="idea-tag">Python Analytics</span>
+        <span class="idea-tag">Claude Code / AI Prompting</span>
+        <span class="idea-tag">ETL & Data Cleaning</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHOR -->
+  <div class="author">
+    <div>
+      <div class="author-name">Tigist Hayilemariyam</div>
+      <div class="author-role">Bewerberin – Data Analyst / Daten-Tüftlerin bei campoint AG, Seligenstadt</div>
+    </div>
+    <div class="author-contact">tigisthayilemariyam@gmail.com · +49 160 2369640</div>
+  </div>
+
+</div>
+
+<script>
+window.addEventListener('load', () => {
+  document.querySelectorAll('.bar-fill').forEach(bar => {
+    const w = bar.dataset.width;
+    setTimeout(() => { bar.style.width = w + '%'; }, 300);
+  });
+});
+
+function filterCards(sector, event) {
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.querySelectorAll('.trend-card').forEach(card => {
+    if (sector === 'all' || card.dataset.sector === sector) {
+      card.classList.remove('hidden');
+      card.classList.toggle('highlighted', sector !== 'all');
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+
+  document.querySelectorAll('.bar-row').forEach(row => {
+    if (sector === 'all' || row.dataset.sector === sector) {
+      row.classList.remove('dimmed');
+    } else {
+      row.classList.add('dimmed');
+    }
+  });
+
+  document.querySelectorAll('.bar-fill').forEach(bar => {
+    const row = bar.closest('.bar-row');
+    if (sector === 'all' || row.dataset.sector === sector) {
+      bar.style.width = '0';
+      setTimeout(() => { bar.style.width = bar.dataset.width + '%'; }, 100);
+    }
+  });
+}
+</script>
+
+</body>
+</html>
